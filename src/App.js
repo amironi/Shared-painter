@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { Canvas } from "./components/Canvas";
+import Canvas from "./components/Canvas";
 import { Goo } from "./components/Goo";
 import { Intro } from "./components/Intro";
 import { Toolbar } from "./components/Toolbar";
