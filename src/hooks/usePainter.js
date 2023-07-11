@@ -74,6 +74,7 @@ export const usePainter = () => {
           `hsl(${hue.current},${selectedSaturation.current}%,${selectedLightness.current}%)`
         );
         ctx.current.strokeStyle = `hsl(${hue.current},${selectedSaturation.current}%,${selectedLightness.current}%)`;
+        
         ctx.current.globalCompositeOperation = "source-over";
 
         hue.current++;

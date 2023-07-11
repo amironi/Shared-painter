@@ -3,10 +3,8 @@ import { v4 } from "uuid";
 import Pusher from "pusher-js";
 
 const url = process.env.BACKEND_URL || "http://localhost:4000/paint";
-const userStrokeStyle = "#EE92C2";
-const guestStrokeStyle = "#F0C987";
 
-const Canvas = ({canvasRef, width}) => {
+const Canvas = ({ canvasRef, width }) => {
   const isPainting = useRef(false);
   const line = useRef([]);
   const userId = useRef(v4());
@@ -14,43 +12,43 @@ const Canvas = ({canvasRef, width}) => {
 
   const widthHalf = width ? width / 2 : 0;
   const cursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="%23000000" opacity="0.3" height="${width}" viewBox="0 0 ${width} ${width}" width="${width}"><circle cx="${widthHalf}" cy="${widthHalf}" r="${widthHalf}" fill="%23000000" /></svg>') ${widthHalf} ${widthHalf}, auto`;
-  
-  
+
   useEffect(() => {
     const pusher = new Pusher("1e5ba9b60e39d68d2587", {
       cluster: "ap2",
     });
-    
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
-    ctx.lineWidth = 5;
-    
+    ctx.lineWidth = 2.5;
+
     const channel = pusher.subscribe("painting");
     channel.bind("draw", (data) => {
-      const { userId, line } = data;
+      const { userId, line, strokeStyle, lineWidth } = data;
       if (userId !== userId.current) {
         line.forEach((position) => {
-          paint(position.start, position.stop, guestStrokeStyle);
+          paint(position.start, position.stop, strokeStyle, lineWidth);
         });
       }
     });
-    
+
     return () => {
       channel.unbind("draw");
       pusher.unsubscribe("painting");
     };
   }, []);
-  
+
   const onMouseDown = ({ nativeEvent }) => {
     const { offsetX, offsetY } = nativeEvent;
     isPainting.current = true;
     prevPos.current = { offsetX, offsetY };
   };
-  
+
   const onMouseMove = ({ nativeEvent }) => {
     if (isPainting.current) {
+      const ctx = canvasRef.current.getContext("2d");
       const { offsetX, offsetY } = nativeEvent;
       const offSetData = { offsetX, offsetY };
       const position = {
@@ -58,38 +56,41 @@ const Canvas = ({canvasRef, width}) => {
         stop: { ...offSetData },
       };
       line.current = line.current.concat(position);
-      paint(prevPos.current, offSetData, userStrokeStyle);
+      paint(prevPos.current, offSetData, ctx.strokeStyle, ctx.lineWidth);
     }
   };
-  
+
   const endPaintEvent = () => {
     if (isPainting.current) {
       isPainting.current = false;
       sendPaintData();
     }
   };
-  
-  const paint = (prevPos, currPos, strokeStyle) => {
+
+  const paint = (prevPos, currPos, strokeStyle, lineWidth) => {
     const { offsetX, offsetY } = currPos;
     const { offsetX: x, offsetY: y } = prevPos;
-  
+
     const ctx = canvasRef.current.getContext("2d");
     ctx.beginPath();
     ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = lineWidth;
     ctx.moveTo(x, y);
     ctx.lineTo(offsetX, offsetY);
     ctx.stroke();
-  
+
     prevPos.current = { offsetX, offsetY };
   };
-  
+
   const sendPaintData = async () => {
+    const ctx = canvasRef.current.getContext("2d");
     const body = {
       line: line.current,
       userId: userId.current,
+      strokeStyle: ctx.strokeStyle,
+      lineWidth: ctx.lineWidth
     };
-    
-    try{
+    try {
       const req = await fetch(url, {
         method: "post",
         body: JSON.stringify(body),
@@ -97,15 +98,15 @@ const Canvas = ({canvasRef, width}) => {
           "content-type": "application/json",
         },
       });
-    
+
       await req.json();
       line.current = [];
     }
-    catch(err){
+    catch (err) {
       console.error(err)
     }
   };
-  
+
   return (
     <canvas
       ref={canvasRef}
