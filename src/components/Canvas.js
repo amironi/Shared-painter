@@ -4,6 +4,9 @@ import Pusher from "pusher-js";
 
 const url = process.env.BACKEND_URL || "http://localhost:4000/paint";
 
+/**
+ * Canvas component for painting.
+ */
 const Canvas = ({ canvasRef, width }) => {
   const isPainting = useRef(false);
   const line = useRef([]);
@@ -14,8 +17,8 @@ const Canvas = ({ canvasRef, width }) => {
   const cursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="%23000000" opacity="0.3" height="${width}" viewBox="0 0 ${width} ${width}" width="${width}"><circle cx="${widthHalf}" cy="${widthHalf}" r="${widthHalf}" fill="%23000000" /></svg>') ${widthHalf} ${widthHalf}, auto`;
 
   useEffect(() => {
-    const pusher = new Pusher(process.env.PUSHER_KEY, {
-      cluster: process.env.CLUSTER,
+    const pusher = new Pusher("1e5ba9b60e39d68d2587", {
+      cluster: "ap2",
     });
 
     const canvas = canvasRef.current;
@@ -82,6 +85,9 @@ const Canvas = ({ canvasRef, width }) => {
     prevPos.current = { offsetX, offsetY };
   };
 
+  /**
+   * Sends the paint data to the server.
+   */
   const sendPaintData = async () => {
     const ctx = canvasRef.current.getContext("2d");
     const body = {
