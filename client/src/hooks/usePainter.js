@@ -150,6 +150,8 @@ export const usePainter = () => {
     setIsRegularMode(true);
     isEraserMode.current = true;
     setIsEraser(true);
+    ctx.current.strokeStyle = "#FFFFFF";
+
   };
 
   const setCurrentSaturation = (e) => {

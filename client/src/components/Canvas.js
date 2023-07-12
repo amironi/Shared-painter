@@ -2,7 +2,9 @@ import React, { useEffect, useRef } from "react";
 import { v4 } from "uuid";
 import Pusher from "pusher-js";
 
-const url = process.env.BACKEND_URL || "http://localhost:4000/paint";
+const url = process.env.REACT_APP_BACKEND_URL;
+const pusher_key = process.env.REACT_APP_PUSHER_KEY;
+const pusher_cluster= process.env.REACT_APP_PUSHER_CLUSTER;
 
 /**
  * Canvas component for painting.
@@ -17,8 +19,8 @@ const Canvas = ({ canvasRef, width }) => {
   const cursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="%23000000" opacity="0.3" height="${width}" viewBox="0 0 ${width} ${width}" width="${width}"><circle cx="${widthHalf}" cy="${widthHalf}" r="${widthHalf}" fill="%23000000" /></svg>') ${widthHalf} ${widthHalf}, auto`;
 
   useEffect(() => {
-    const pusher = new Pusher("1e5ba9b60e39d68d2587", {
-      cluster: "ap2",
+    const pusher = new Pusher(pusher_key, {
+      cluster: pusher_cluster,
     });
 
     const canvas = canvasRef.current;
