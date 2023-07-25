@@ -1,4 +1,8 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
+
+import useSocketIo from "./useSocketIo";
+
+let line = [];
 
 export const usePainter = () => {
   const canvas = useRef();
@@ -6,6 +10,9 @@ export const usePainter = () => {
   const [isRegularMode, setIsRegularMode] = useState(true);
   const [isAutoWidth, setIsAutoWidth] = useState(false);
   const [isEraser, setIsEraser] = useState(false);
+  // const [line, setLine] = useState([]);
+
+  const [ctx, setCtx] = useState();
 
   const [currentColor, setCurrentColor] = useState("#000000");
   const [currentWidth, setCurrentWidth] = useState(50);
@@ -23,94 +30,124 @@ export const usePainter = () => {
   const isRegularPaintMode = useRef(true);
   const isEraserMode = useRef(false);
 
-  const ctx = useRef(canvas?.current?.getContext("2d"));
-
-  const drawOnCanvas = useCallback((event) => {
-    if (!ctx || !ctx.current) {
-      return;
-    }
-    ctx.current.beginPath();
-    ctx.current.moveTo(lastX.current, lastY.current);
-    ctx.current.lineTo(event.offsetX, event.offsetY);
-    ctx.current.stroke();
-
-    [lastX.current, lastY.current] = [event.offsetX, event.offsetY];
-  }, []);
-
-  const handleMouseDown = useCallback((e) => {
-    isDrawing.current = true;
-    [lastX.current, lastY.current] = [e.offsetX, e.offsetY];
-  }, []);
-
-  const dynamicLineWidth = useCallback(() => {
-    if (!ctx || !ctx.current) {
-      return;
-    }
-    if (ctx.current.lineWidth > 90 || ctx.current.lineWidth < 10) {
-      direction.current = !direction.current;
-    }
-    direction.current ? ctx.current.lineWidth++ : ctx.current.lineWidth--;
-    setCurrentWidth(ctx.current.lineWidth);
-  }, []);
-
-  const drawNormal = useCallback(
-    (e) => {
-      if (!isDrawing.current || !ctx.current) return;
-
-      if (isRegularPaintMode.current || isEraserMode.current) {
-        ctx.current.strokeStyle = selectedColor.current;
-
-        setCurrentColor(selectedColor.current);
-
-        autoWidth.current && !isEraserMode.current
-          ? dynamicLineWidth()
-          : (ctx.current.lineWidth = selectedLineWidth.current);
-
-        isEraserMode.current
-          ? (ctx.current.globalCompositeOperation = "destination-out")
-          : (ctx.current.globalCompositeOperation = "source-over");
-      } else {
-        setCurrentColor(
-          `hsl(${hue.current},${selectedSaturation.current}%,${selectedLightness.current}%)`
-        );
-        ctx.current.strokeStyle = `hsl(${hue.current},${selectedSaturation.current}%,${selectedLightness.current}%)`;
-        ctx.current.globalCompositeOperation = "source-over";
-
-        hue.current++;
-
-        if (hue.current >= 360) hue.current = 0;
-
-        autoWidth.current
-          ? dynamicLineWidth()
-          : (ctx.current.lineWidth = selectedLineWidth.current);
-      }
-      drawOnCanvas(e);
-    },
-    [drawOnCanvas, dynamicLineWidth]
-  );
-
-  const stopDrawing = useCallback(() => {
-    isDrawing.current = false;
-  }, []);
-
-  const init = useCallback(() => {
-    ctx.current = canvas?.current?.getContext("2d");
-    if (canvas && canvas.current && ctx && ctx.current) {
-      canvas.current.addEventListener("mousedown", handleMouseDown);
-      canvas.current.addEventListener("mousemove", drawNormal);
-      canvas.current.addEventListener("mouseup", stopDrawing);
-      canvas.current.addEventListener("mouseout", stopDrawing);
-
+  useEffect(() => {
+    if (canvas.current) {
       canvas.current.width = window.innerWidth - 196;
       canvas.current.height = window.innerHeight;
 
-      ctx.current.strokeStyle = "#000";
-      ctx.current.lineJoin = "round";
-      ctx.current.lineCap = "round";
-      ctx.current.lineWidth = 10;
+      const ctx = canvas.current.getContext("2d");
+
+      ctx.strokeStyle = "#000";
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.lineWidth = 10;
+
+      setCtx(ctx);
+
       setIsReady(true);
     }
-  }, [drawNormal, handleMouseDown, stopDrawing]);
+  }, []);
+
+  const paint = useCallback(
+    (position) => {
+      const { start, stop, strokeStyle, lineWidth, globalCompositeOperation } =
+        position;
+
+      console.log("paint", position);
+
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = lineWidth;
+      ctx.globalCompositeOperation = globalCompositeOperation;
+
+      ctx.beginPath();
+      ctx.moveTo(start.offsetX, start.offsetY);
+      ctx.lineTo(stop.offsetX, stop.offsetY);
+      ctx.stroke();
+
+      [lastX.current, lastY.current] = [stop.offsetX, stop.offsetY];
+    },
+    [ctx]
+  );
+
+  const onPaint = (body) => {
+    const { line } = body;
+
+    line.forEach((position) => {
+      paint(position);
+    });
+  };
+
+  const socketIo = useSocketIo({ onPaint });
+
+  const onMouseDown = (e) => {
+    isDrawing.current = true;
+    [lastX.current, lastY.current] = [e.offsetX, e.offsetY];
+  };
+
+  const dynamicLineWidth = useCallback(() => {
+    if (ctx.lineWidth > 90 || ctx.lineWidth < 10) {
+      direction.current = !direction.current;
+    }
+    direction.current ? ctx.lineWidth++ : ctx.lineWidth--;
+    setCurrentWidth(ctx.lineWidth);
+  }, [ctx]);
+
+  const onMouseMove = (e) => {
+    if (!isDrawing.current) return;
+
+    if (isRegularPaintMode.current || isEraserMode.current) {
+      ctx.strokeStyle = selectedColor.current;
+
+      setCurrentColor(selectedColor.current);
+
+      autoWidth.current && !isEraserMode.current
+        ? dynamicLineWidth()
+        : (ctx.lineWidth = selectedLineWidth.current);
+
+      isEraserMode.current
+        ? (ctx.globalCompositeOperation = "destination-out")
+        : (ctx.globalCompositeOperation = "source-over");
+    } else {
+      setCurrentColor(
+        `hsl(${hue.current},${selectedSaturation.current}%,${selectedLightness.current}%)`
+      );
+      ctx.strokeStyle = `hsl(${hue.current},${selectedSaturation.current}%,${selectedLightness.current}%)`;
+      ctx.globalCompositeOperation = "source-over";
+
+      hue.current++;
+
+      if (hue.current >= 360) hue.current = 0;
+
+      autoWidth.current
+        ? dynamicLineWidth()
+        : (ctx.lineWidth = selectedLineWidth.current);
+    }
+
+    const position = {
+      start: { offsetX: lastX.current, offsetY: lastY.current },
+      stop: { offsetX: e.offsetX, offsetY: e.offsetY },
+      lineWidth: ctx.lineWidth,
+      strokeStyle: ctx.strokeStyle,
+      globalCompositeOperation: ctx.globalCompositeOperation,
+    };
+
+    line = line.concat(position);
+
+    paint(position);
+  };
+
+  const endPaintEvent =
+    (() => {
+      isDrawing.current = false;
+
+      // console.log("line", line);
+      socketIo.broadcast({
+        line,
+      });
+
+      line = [];
+    },
+    [socketIo]);
 
   const handleRegularMode = useCallback(() => {
     setIsRegularMode(true);
@@ -137,11 +174,8 @@ export const usePainter = () => {
   };
 
   const handleClear = useCallback(() => {
-    if (!ctx || !ctx.current || !canvas || !canvas.current) {
-      return;
-    }
-    ctx.current.clearRect(0, 0, canvas.current.width, canvas.current.height);
-  }, []);
+    ctx.clearRect(0, 0, canvas.current.width, canvas.current.height);
+  }, [ctx]);
 
   const handleEraserMode = (e) => {
     autoWidth.current = false;
@@ -187,7 +221,6 @@ export const usePainter = () => {
       isEraser,
     },
     {
-      init,
       handleRegularMode,
       handleSpecialMode,
       handleColor,
@@ -197,6 +230,9 @@ export const usePainter = () => {
       setAutoWidth,
       setCurrentSaturation,
       setCurrentLightness,
+      onMouseDown,
+      onMouseMove,
+      endPaintEvent,
     },
   ];
 };
