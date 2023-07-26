@@ -9,7 +9,7 @@ const App = () => {
   const [dateUrl, setDataUrl] = useState("#");
   const [
     { canvas, isReady, ...state },
-    { onMouseDown, onMouseMove, endPaintEvent, ...api },
+    { onMouseDown, onMouseMove, onMouseUp, ...api },
   ] = usePainter();
 
   const handleDownload = useCallback(() => {
@@ -27,10 +27,10 @@ const App = () => {
       <Toolbar {...toolbarProps} />
       <Canvas
         width={state.currentWidth}
-        canvasRef={canvas}
+        canvas={canvas}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
-        endPaintEvent={endPaintEvent}
+        onMouseUp={onMouseUp}
       />
     </>
   );

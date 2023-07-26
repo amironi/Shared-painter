@@ -6,6 +6,7 @@ let line = [];
 
 export const usePainter = () => {
   const canvas = useRef();
+
   const [isReady, setIsReady] = useState(false);
   const [isRegularMode, setIsRegularMode] = useState(true);
   const [isAutoWidth, setIsAutoWidth] = useState(false);
@@ -31,21 +32,20 @@ export const usePainter = () => {
   const isEraserMode = useRef(false);
 
   useEffect(() => {
-    if (canvas.current) {
-      canvas.current.width = window.innerWidth - 196;
-      canvas.current.height = window.innerHeight;
+    if (!canvas.current) return;
 
-      const ctx = canvas.current.getContext("2d");
+    console.log("useEffect");
+    canvas.current.width = window.innerWidth - 196;
+    canvas.current.height = window.innerHeight;
 
-      ctx.strokeStyle = "#000";
-      ctx.lineJoin = "round";
-      ctx.lineCap = "round";
-      ctx.lineWidth = 10;
+    const ctx = canvas.current.getContext("2d");
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.lineWidth = 10;
 
-      setCtx(ctx);
+    setCtx(ctx);
 
-      setIsReady(true);
-    }
+    setIsReady(true);
   }, []);
 
   const paint = useCallback(
@@ -69,20 +69,16 @@ export const usePainter = () => {
     [ctx]
   );
 
-  const onPaint = (body) => {
-    const { line } = body;
+  const onPaint = useCallback(
+    (body) => {
+      const { line } = body;
 
-    line.forEach((position) => {
-      paint(position);
-    });
-  };
-
-  const socketIo = useSocketIo({ onPaint });
-
-  const onMouseDown = (e) => {
-    isDrawing.current = true;
-    [lastX.current, lastY.current] = [e.offsetX, e.offsetY];
-  };
+      line.forEach((position) => {
+        paint(position);
+      });
+    },
+    [paint]
+  );
 
   const dynamicLineWidth = useCallback(() => {
     if (ctx.lineWidth > 90 || ctx.lineWidth < 10) {
@@ -92,18 +88,26 @@ export const usePainter = () => {
     setCurrentWidth(ctx.lineWidth);
   }, [ctx]);
 
-  const onMouseMove = (e) => {
+  const socketIo = useSocketIo({ onPaint });
+
+  const onMouseDown = ({ nativeEvent }) => {
+    console.log("onMouseDown", nativeEvent);
+
+    isDrawing.current = true;
+    [lastX.current, lastY.current] = [nativeEvent.offsetX, nativeEvent.offsetY];
+  };
+
+  const onMouseMove = ({ nativeEvent }) => {
+    // console.log("onMouseMove", e);
+
     if (!isDrawing.current) return;
 
     if (isRegularPaintMode.current || isEraserMode.current) {
       ctx.strokeStyle = selectedColor.current;
-
       setCurrentColor(selectedColor.current);
-
       autoWidth.current && !isEraserMode.current
         ? dynamicLineWidth()
         : (ctx.lineWidth = selectedLineWidth.current);
-
       isEraserMode.current
         ? (ctx.globalCompositeOperation = "destination-out")
         : (ctx.globalCompositeOperation = "source-over");
@@ -125,7 +129,7 @@ export const usePainter = () => {
 
     const position = {
       start: { offsetX: lastX.current, offsetY: lastY.current },
-      stop: { offsetX: e.offsetX, offsetY: e.offsetY },
+      stop: { offsetX: nativeEvent.offsetX, offsetY: nativeEvent.offsetY },
       lineWidth: ctx.lineWidth,
       strokeStyle: ctx.strokeStyle,
       globalCompositeOperation: ctx.globalCompositeOperation,
@@ -136,18 +140,16 @@ export const usePainter = () => {
     paint(position);
   };
 
-  const endPaintEvent =
-    (() => {
-      isDrawing.current = false;
+  const onMouseUp = () => {
+    isDrawing.current = false;
 
-      // console.log("line", line);
-      socketIo.broadcast({
-        line,
-      });
+    // console.log("line", line);
+    socketIo.broadcast({
+      line,
+    });
 
-      line = [];
-    },
-    [socketIo]);
+    line = [];
+  };
 
   const handleRegularMode = useCallback(() => {
     setIsRegularMode(true);
@@ -232,7 +234,7 @@ export const usePainter = () => {
       setCurrentLightness,
       onMouseDown,
       onMouseMove,
-      endPaintEvent,
+      onMouseUp,
     },
   ];
 };

@@ -17,6 +17,8 @@ const useSocketIo = ({ user, setUser, onPaint, refresh, setRefresh }) => {
 
   useEffect(() => {
     const socket = socketIOClient(process.env.REACT_APP_SERVER);
+
+    console.log(`useSocketIo::useEffect`, process.env.REACT_APP_SERVER);
     setSocket(socket);
 
     socket.on("connect", () => {
