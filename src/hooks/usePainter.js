@@ -16,19 +16,19 @@ export const usePainter = () => {
   const [ctx, setCtx] = useState();
 
   const [currentColor, setCurrentColor] = useState("#000000");
-  const [currentWidth, setCurrentWidth] = useState(50);
+  const [currentWidth, setCurrentWidth] = useState(10);
 
-  const autoWidth = useRef(false);
   const selectedSaturation = useRef(100);
   const selectedLightness = useRef(50);
   const selectedColor = useRef("#000000");
-  const selectedLineWidth = useRef(50);
+  const selectedLineWidth = useRef(10);
   const lastX = useRef(0);
   const lastY = useRef(0);
   const hue = useRef(0);
   const isDrawing = useRef(false);
   const direction = useRef(true);
-  const isRegularPaintMode = useRef(true);
+  const autoWidth = useRef(false);
+  const isRegularPaintMode = useRef(false);
   const isEraserMode = useRef(false);
 
   useEffect(() => {

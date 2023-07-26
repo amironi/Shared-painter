@@ -29,7 +29,6 @@ export const Toolbar = ({
   return (
     <aside>
       <div>
-        <BrushPreview currentWidth={currentWidth} currentColor={currentColor} />
         <div className="tool-section tool-section--lrg">
           <div className="tool-section">
             <small>
@@ -43,7 +42,26 @@ export const Toolbar = ({
             id="toolColorPicker"
             onChange={handleColor}
           />
-        </div>
+        </div>{" "}
+        <BrushPreview currentWidth={currentWidth} currentColor={currentColor} />
+        {!isAutoWidth && (
+          <div className="tool-section tool-section--lrg">
+            <div className="tool-section">
+              <small>
+                <strong>Brush size</strong>
+              </small>
+            </div>
+            <div className="tool-section">
+              <input
+                defaultValue="50"
+                type="range"
+                min="10"
+                max="90"
+                onChange={handleWidth}
+              />
+            </div>
+          </div>
+        )}
         <div className="tool-section">
           <small>
             <strong>Tools</strong>
@@ -99,24 +117,6 @@ export const Toolbar = ({
             </label>
           </div>
         </div>
-        {!isAutoWidth && (
-          <div className="tool-section tool-section--lrg">
-            <div className="tool-section">
-              <small>
-                <strong>Brush size</strong>
-              </small>
-            </div>
-            <div className="tool-section">
-              <input
-                defaultValue="50"
-                type="range"
-                min="10"
-                max="90"
-                onChange={handleWidth}
-              />
-            </div>
-          </div>
-        )}
         {!isRegularMode && (
           <div className="tool-section tool-section--lrg">
             <div className="tool-section">
