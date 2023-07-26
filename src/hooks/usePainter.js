@@ -1,11 +1,13 @@
 import { useCallback, useRef, useState, useEffect } from "react";
-
 import useSocketIo from "./useSocketIo";
+import { v4 } from "uuid";
+import { useLocation } from "react-router-dom";
 
 let line = [];
 
 export const usePainter = () => {
   const canvas = useRef();
+  const location = useLocation();
 
   const [isReady, setIsReady] = useState(false);
   const [isRegularMode, setIsRegularMode] = useState(true);
@@ -53,7 +55,7 @@ export const usePainter = () => {
       const { start, stop, strokeStyle, lineWidth, globalCompositeOperation } =
         position;
 
-      console.log("paint", position);
+      // console.log("paint", position);
 
       ctx.strokeStyle = strokeStyle;
       ctx.lineWidth = lineWidth;
@@ -71,13 +73,15 @@ export const usePainter = () => {
 
   const onPaint = useCallback(
     (body) => {
-      const { line } = body;
+      const { line, group } = body;
+
+      if (group !== location.pathname) return;
 
       line.forEach((position) => {
         paint(position);
       });
     },
-    [paint]
+    [paint, location.pathname]
   );
 
   const dynamicLineWidth = useCallback(() => {
@@ -143,9 +147,9 @@ export const usePainter = () => {
   const onMouseUp = () => {
     isDrawing.current = false;
 
-    // console.log("line", line);
     socketIo.broadcast({
       line,
+      group: location.pathname,
     });
 
     line = [];
@@ -176,8 +180,10 @@ export const usePainter = () => {
   };
 
   const handleClear = useCallback(() => {
-    ctx.clearRect(0, 0, canvas.current.width, canvas.current.height);
-  }, [ctx]);
+    // ctx.clearRect(0, 0, canvas.current.width, canvas.current.height);
+
+    window.location.href = "/" + v4().split("-")[0];
+  }, []);
 
   const handleEraserMode = (e) => {
     autoWidth.current = false;

@@ -3,13 +3,22 @@ import { useState, useEffect, useCallback } from "react";
 
 import { toast } from "react-hot-toast";
 
-const useSocketIo = ({ user, setUser, onPaint, refresh, setRefresh }) => {
+const useSocketIo = ({
+  user,
+  setUser,
+  onPaint,
+  onConnect,
+  refresh,
+  setRefresh,
+}) => {
   const [receivedMessage, setReceivedMessage] = useState();
   const [socket, setSocket] = useState();
   // const [onPaint, setOnPaint] = useState();
 
   const broadcast = useCallback(
     (body) => {
+      console.log("broadcast", body);
+
       socket.emit("paint", body);
     },
     [socket]
@@ -25,6 +34,11 @@ const useSocketIo = ({ user, setUser, onPaint, refresh, setRefresh }) => {
       console.log(`useSocketIo is connected.`, socket.id);
       socket.emit("onUserReactConnected", user);
     });
+
+    // socket.on("onPaint", (body) => {
+    //   console.log(`useSocketIo::onPaint`);
+    //   onPaint(body);
+    // });
 
     socket.on("onPaint", (body) => {
       console.log(`useSocketIo::onPaint`);

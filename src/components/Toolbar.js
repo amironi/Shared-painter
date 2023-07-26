@@ -159,7 +159,7 @@ export const Toolbar = ({
           Save Image
         </a>
         <button className="btn btn--block" onClick={handleClear}>
-          Clear
+          New Image
         </button>
       </div>
     </aside>
