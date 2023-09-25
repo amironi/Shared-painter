@@ -1,6 +1,4 @@
 import { useCallback, useRef, useState, useEffect } from "react";
-import useSocketIo from "./useSocketIo";
-import { v4 } from "uuid";
 import { useLocation } from "react-router-dom";
 
 let line = [];
@@ -71,19 +69,6 @@ export const usePainter = () => {
     [ctx]
   );
 
-  const onPaint = useCallback(
-    (body) => {
-      const { line, group } = body;
-
-      if (group !== location.pathname) return;
-
-      line.forEach((position) => {
-        paint(position);
-      });
-    },
-    [paint, location.pathname]
-  );
-
   const dynamicLineWidth = useCallback(() => {
     if (ctx.lineWidth > 90 || ctx.lineWidth < 10) {
       direction.current = !direction.current;
@@ -91,8 +76,6 @@ export const usePainter = () => {
     direction.current ? ctx.lineWidth++ : ctx.lineWidth--;
     setCurrentWidth(ctx.lineWidth);
   }, [ctx]);
-
-  const socketIo = useSocketIo({ onPaint });
 
   const onMouseDown = ({ nativeEvent }) => {
     console.log("onMouseDown", nativeEvent);
@@ -146,11 +129,6 @@ export const usePainter = () => {
 
   const onMouseUp = () => {
     isDrawing.current = false;
-
-    socketIo.broadcast({
-      line,
-      group: location.pathname,
-    });
 
     line = [];
   };
