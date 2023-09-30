@@ -5,6 +5,17 @@ import { Canvas } from "./components/Canvas";
 import { Toolbar } from "./components/Toolbar";
 import { usePainter } from "./hooks/usePainter";
 
+const socket = new WebSocket("ws://localhost:5000/");
+
+socket.onopen =()=>{
+  console.log("message from client")
+}
+
+socket.onmessage=(event)=>{
+console.log(event.data)
+}
+
+
 const App = () => {
   const [dateUrl, setDataUrl] = useState("#");
   const [
