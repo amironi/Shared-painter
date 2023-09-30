@@ -8,6 +8,11 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import { BrushPreview } from "./BrushPreview";
 
+const socket = new WebSocket("ws://localhost:5000/");
+const serverSend=()=>{
+  socket.send("message from client")
+    }
+
 export const Toolbar = ({
   currentWidth,
   currentColor,
@@ -161,6 +166,9 @@ export const Toolbar = ({
         <button className="btn btn--block" onClick={handleClear}>
           New Image
         </button>
+        <button className="btn btn--block" onClick={serverSend}>
+       Send to server
+      </button>
       </div>
     </aside>
   );
